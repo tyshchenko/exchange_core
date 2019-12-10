@@ -1,21 +1,27 @@
-FROM alpine:3.7
-RUN apk --no-cache add mariadb mariadb-client
+FROM mysql:5.7
 
-VOLUME /var/lib/mysql
+MAINTAINER guo yukun
+
+ENV MYSQL_USER=mysql\
+MYSQL_PASSWORD=mysql \
+MYSQL_ROOT_PASSWORD=root
+
+#定义shell文件名
+ENV INSTALL_DATA_SHELL install-data.sh
+
+ENV WORK_PATH /sql/
+
+ENV FILE_0 create_trade_history.sql
+ENV FILE_1 create_trade_log.sql
+
+RUN mkdir -p $WORK_PATH
+COPY sql/*.sql /sql/
+
+COPY /sql/*.sh*  /docker-entrypoint-initdb.d/
+RUN chmod a+x  /docker-entrypoint-initdb.d/$INSTALL_DATA_SHELL
+
 EXPOSE 3306
 
-COPY my.cnf /etc/mysql/my.cnf
-RUN chown -R mysql.mysql /etc/mysql
 
-RUN mkdir /run/mysqld
-RUN chown -R mysql.mysql /run/mysqld
 
-COPY entrypoint.sh docker-entrypoint.sh
 
-RUN mkdir /docker-entrypoint-initdb.d
-COPY init_trade_history.sh /docker-entrypoint-initdb.d
-COPY create_trade_history.sql /docker-entrypoint-initdb.d
-COPY create_trade_log.sql /docker-entrypoint-initdb.d
-
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["mysqld"]

@@ -1,4 +1,4 @@
-FROM alpine:3.7
+FROM alpine:3.10
 
 # Default to UTF-8 file.encoding
 ENV LANG C.UTF-8
@@ -17,7 +17,7 @@ ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openj
 
 ENV JAVA_VERSION 8u151
 #ENV JAVA_ALPINE_VERSION 8.171.11-r0
-ENV JAVA_ALPINE_VERSION 8.181.13-r0
+ENV JAVA_ALPINE_VERSION 8.222.10-r0
 RUN set -x \
 	&& apk add --no-cache \
 	openjdk8-jre="$JAVA_ALPINE_VERSION" \
@@ -30,7 +30,7 @@ RUN mkdir -p /etc/kafka
 RUN mkdir -p /var/log/kafka
 RUN mkdir -p /var/lib/kafka
 
-RUN wget http://mirror.linux-ia64.org/apache/kafka/1.0.2/kafka_2.11-1.0.2.tgz && \
+RUN wget https://archive.apache.org/dist/kafka/1.0.2/kafka_2.11-1.0.2.tgz && \
 	tar -xvf kafka_2.11-1.0.2.tgz -C /opt/kafka/ && \
 	rm kafka_2.11-1.0.2.tgz
 

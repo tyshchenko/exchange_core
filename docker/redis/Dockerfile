@@ -1,4 +1,4 @@
-FROM alpine:3.7
+FROM alpine:3.10
 
 RUN addgroup -S redis && adduser -S -G redis redis
 RUN apk add --no-cache redis
