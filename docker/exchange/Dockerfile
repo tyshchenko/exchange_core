@@ -39,8 +39,12 @@ RUN git clone https://github.com/edenhill/librdkafka.git \
     && ./configure \
     && make \
     && make install \
+    && ldconfig \
     && cd / \
     && rm -rf librdkafka
+
+# RUN LD_LIBRARY_PATH=/usr/local/lib \
+#    && export LD_LIBRARY_PATH
 
 RUN mkdir viabtc_exchange_server
 
@@ -108,6 +112,16 @@ RUN apt-get install -y \
 			libmysqlclient20 \
 			jq \
 			netcat
+
+RUN git clone https://github.com/edenhill/librdkafka.git \
+    && cd librdkafka \
+    && ./configure \
+    && make \
+    && make install \
+    && ldconfig \
+    && cd / \
+    && rm -rf librdkafka
+
 RUN rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /viabtc_exchange_server

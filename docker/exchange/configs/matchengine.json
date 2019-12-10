@@ -25,14 +25,14 @@
   "cli": "tcp@127.0.0.1:7317",
   "db_log": {
     "host": "mysql",
-    "user": "exchange",
-    "pass": "exchange",
+    "user": "root",
+    "pass": "root",
     "name": "trade_log"
   },
   "db_history": {
     "host": "mysql",
-    "user": "exchange",
-    "pass": "exchange",
+    "user": "root",
+    "pass": "root",
     "name": "trade_history"
   },
   "assets": [

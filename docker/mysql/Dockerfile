@@ -1,4 +1,4 @@
-FROM mysql:5.7
+FROM mariadb
 
 MAINTAINER guo yukun
 
@@ -6,7 +6,6 @@ ENV MYSQL_USER=mysql\
 MYSQL_PASSWORD=mysql \
 MYSQL_ROOT_PASSWORD=root
 
-#定义shell文件名
 ENV INSTALL_DATA_SHELL install-data.sh
 
 ENV WORK_PATH /sql/

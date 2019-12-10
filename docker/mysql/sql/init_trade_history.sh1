@@ -5,6 +5,10 @@ MYSQL_USER="root"
 MYSQL_PASS="root"
 MYSQL_DB="trade_history"
 
+MYSQL_DATABASE_HISTORY="trade_history"
+MYSQL_DATABASE_LOG="trade_log"
+MYSQL_USER="exchange"
+MYSQL_PASSWORD="exchange"
 
 
 for i in `seq 0 99`
@@ -36,3 +40,10 @@ do
     echo "create table user_deal_history_$i"
     mysql -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB -e "CREATE TABLE user_deal_history_$i LIKE user_deal_history_example;"
 done
+
+
+mysql -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB -e "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD';"
+mysql -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB -e "GRANT ALL ON $MYSQL_DATABASE_HISTORY.* TO '$MYSQL_USER'@'%' ;"
+mysql -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB -e "GRANT ALL ON $MYSQL_DATABASE_LOG.* TO '$MYSQL_USER'@'%' ;"
+mysql -h$MYSQL_HOST -u$MYSQL_USER -p$MYSQL_PASS $MYSQL_DB -e "FLUSH PRIVILEGES ;"
+
