@@ -111,7 +111,29 @@ RUN apt-get install -y \
 			librtmp1 \
 			libmysqlclient20 \
 			jq \
-			netcat
+			netcat \
+      git \
+      wget \
+      make \
+      cmake \
+      gcc \
+      g++ \
+      python \
+      libev-dev \
+      libmpdec-dev \
+      libjansson-dev \
+      libssl-dev \
+      libgnutls-dev \
+      libmysqlclient-dev \
+      libhttp-parser-dev \
+      libcurl4-openssl-dev \
+      liblz4-dev \
+      libldap2-dev \
+	libkrb5-dev \
+	libalberta-dev  \
+	libgss-dev \
+	libidn11-dev \
+	librtmp-dev
 
 RUN git clone https://github.com/edenhill/librdkafka.git \
     && cd librdkafka \
