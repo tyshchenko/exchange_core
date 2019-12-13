@@ -37,24 +37,24 @@
   },
   "assets": [
       {
-          "name": "RINKEBY",
+          "name": "BTC",
           "prec_save": 16,
           "prec_show": 8
       },{
-          "name": "TESTNET3",
+          "name": "USD",
           "prec_save": 16,
           "prec_show": 8
       }
   ],
   "markets": [
       {
-          "name": "TESTNET3RINKEBY",
+          "name": "BTCUSD",
           "stock": {
-              "name": "RINKEBY",
+              "name": "BTC",
               "prec": 8
           },
           "money": {
-              "name": "TESTNET3",
+              "name": "USD",
               "prec": 8
           },
           "min_amount":"0.00001"
