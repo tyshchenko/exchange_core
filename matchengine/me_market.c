@@ -753,7 +753,7 @@ int market_put_limit_order(bool real, json_t **result, market_t *m, uint32_t use
     return 0;
 }
 
-static int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source)
+int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source)
 {
     mpd_t *freeze       = mpd_new(&mpd_ctx);
     mpd_mul(freeze, price, decimal(LEVERAGE, 1), &mpd_ctx);
