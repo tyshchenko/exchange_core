@@ -19,8 +19,8 @@
 
 # define HISTORY_HASH_NUM           100
 
-# define LEVERAGE                   0.1
-# define LEVERAGE_PRICE             1.1
+# define LEVERAGE                   "0.1"
+# define LEVERAGE_PRICE             "1.1"
 
 # endif
 
