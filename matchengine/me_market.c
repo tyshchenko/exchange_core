@@ -799,13 +799,13 @@ int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32
                 log_fatal("append_order_history fail: %d, order: %"PRIu64"", ret, order->id);
             }
             push_order_message(ORDER_EVENT_FINISH, order, m);
-            *result = get_order_info(order);
+            
         }
         order_free(order);
     } else {
         if (real) {
             push_order_message(ORDER_EVENT_PUT, order, m);
-            *result = get_order_info(order);
+            
         }
         ret = order_put(m, order);
         if (ret < 0) {
