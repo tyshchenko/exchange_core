@@ -474,6 +474,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
             if (balance_unfreeze(maker->user_id, m->stock, lev_amount) == NULL) {
+                log_error("execute order: %"PRIu64" fail balance_unfreeze", maker->id);
                 return -__LINE__;
             }
             if (ret < 0) {
@@ -745,7 +746,7 @@ int market_put_limit_order(bool real, json_t **result, market_t *m, uint32_t use
             log_fatal("order_put fail: %d, order: %"PRIu64"", ret, order->id);
         }
     }
-
+    mpd_del(lev_amount);
     return 0;
 }
 
@@ -1138,11 +1139,14 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
 
 int market_put_market_order(bool real, json_t **result, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *taker_fee, const char *source)
 {
+    mpd_t *lev_amount   = mpd_new(&mpd_ctx);
+    mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
+    mpd_t *balance = balance_get(user_id, BALANCE_TYPE_AVAILABLE, m->stock);
+    if (!balance || mpd_cmp(balance, lev_amount, &mpd_ctx) < 0) {
+        return -1;
+    }
+
     if (side == MARKET_ORDER_SIDE_ASK) {
-        mpd_t *balance = balance_get(user_id, BALANCE_TYPE_AVAILABLE, m->stock);
-        if (!balance || mpd_cmp(balance, amount, &mpd_ctx) < 0) {
-            return -1;
-        }
 
         skiplist_iter *iter = skiplist_get_iterator(m->bids);
         skiplist_node *node = skiplist_next(iter);
@@ -1156,10 +1160,6 @@ int market_put_market_order(bool real, json_t **result, market_t *m, uint32_t us
             return -2;
         }
     } else {
-        mpd_t *balance = balance_get(user_id, BALANCE_TYPE_AVAILABLE, m->stock);
-        if (!balance || mpd_cmp(balance, amount, &mpd_ctx) < 0) {
-            return -1;
-        }
 
         skiplist_iter *iter = skiplist_get_iterator(m->asks);
         skiplist_node *node = skiplist_next(iter);
@@ -1229,6 +1229,7 @@ int market_put_market_order(bool real, json_t **result, market_t *m, uint32_t us
     }
 
     order_free(order);
+    mpd_del(lev_amount);
     return 0;
 }
 
