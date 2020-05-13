@@ -754,6 +754,7 @@ int market_put_limit_order(bool real, json_t **result, market_t *m, uint32_t use
 int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source)
 {
     mpd_t *freeze       = mpd_new(&mpd_ctx);
+    mpd_t *order_price  = mpd_new(&mpd_ctx);
     mpd_mul(freeze, price, amount, &mpd_ctx);
 
     order_t *order = malloc(sizeof(order_t));
@@ -791,14 +792,14 @@ int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32
 
     int ret;
     if (side == MARKET_ORDER_SIDE_ASK) {
-        mpd_mul(price, decimal(LEVERAGE_PRICE, 1), price, &mpd_ctx);
-        mpd_rescale(price, price, 0, &mpd_ctx);
-        mpd_copy(order->price, price, &mpd_ctx);
+        mpd_mul(order_price, decimal(LEVERAGE_PRICE, 1), price, &mpd_ctx);
+        mpd_rescale(order_price, order_price, 0, &mpd_ctx);
+        mpd_copy(order->price, order_price, &mpd_ctx);
         ret = execute_limit_ask_order(real, m, order);
     } else {
-        mpd_div(price, price, decimal(LEVERAGE_PRICE, 1), &mpd_ctx);
-        mpd_rescale(price, price, 0, &mpd_ctx);
-        mpd_copy(order->price, price, &mpd_ctx);
+        mpd_div(order_price, price, decimal(LEVERAGE_PRICE, 1), &mpd_ctx);
+        mpd_rescale(order_price, order_price, 0, &mpd_ctx);
+        mpd_copy(order->price, order_price, &mpd_ctx);
         ret = execute_limit_bid_order(real, m, order);
     }
     if (ret < 0) {
@@ -828,6 +829,7 @@ int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32
         }
     }
     mpd_del(freeze);
+    mpd_del(order_price);
     return 0;
 }
 
