@@ -790,7 +790,7 @@ int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32
 
     int ret;
     if (side == MARKET_ORDER_SIDE_ASK) {
-        mpd_mul(price, price, decimal(LEVERAGE_PRICE, 1), &mpd_ctx);
+        mpd_mul(price, decimal(LEVERAGE_PRICE, 1), price, &mpd_ctx);
         mpd_rescale(price, price, 0, &mpd_ctx);
         mpd_copy(order->price, price, &mpd_ctx);
         ret = execute_limit_ask_order(real, m, order);
