@@ -213,20 +213,16 @@ static int order_finish(bool real, market_t *m, order_t *order)
         if (node) {
             skiplist_delete(m->asks, node);
         }
-        if (mpd_cmp(order->freeze, mpd_zero, &mpd_ctx) > 0) {
-            if (balance_unfreeze(order->user_id, m->stock, order->freeze) == NULL) {
-                return -__LINE__;
-            }
-        }
     } else {
         skiplist_node *node = skiplist_find(m->bids, order);
         if (node) {
             skiplist_delete(m->bids, node);
         }
-        if (mpd_cmp(order->freeze, mpd_zero, &mpd_ctx) > 0) {
-            if (balance_unfreeze(order->user_id, m->stock, order->freeze) == NULL) {
-                return -__LINE__;
-            }
+    }
+    
+    if ((mpd_cmp(order->freeze, mpd_zero, &mpd_ctx) > 0) && (order->type != MARKET_ORDER_TYPE_FUTURES)) {
+        if (balance_unfreeze(order->user_id, m->stock, order->freeze) == NULL) {
+            return -__LINE__;
         }
     }
 
