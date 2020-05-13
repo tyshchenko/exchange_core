@@ -387,7 +387,7 @@ static int load_oper(json_t *detail)
     } else {
         return -__LINE__;
     }
-    ret = 0;
+
     return ret;
 }
 
