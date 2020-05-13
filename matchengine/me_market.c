@@ -192,7 +192,7 @@ static int order_put(market_t *m, order_t *order)
             return -__LINE__;
     }
     mpd_t *lev_amount   = mpd_new(&mpd_ctx);
-    mpd_mul(lev_amount, order->left, LEVERAGE, &mpd_ctx);
+    mpd_mul(lev_amount, order->left, decimal(LEVERAGE, 1), &mpd_ctx);
 
     if (order->type == MARKET_ORDER_TYPE_FUTURES) {
         if (balance_freeze(order->user_id, m->stock, lev_amount) == NULL)
@@ -389,7 +389,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
             mpd_copy(amount, maker->left, &mpd_ctx);
         }
         
-        mpd_mul(lev_amount, amount, LEVERAGE, &mpd_ctx);
+        mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
         mpd_mul(deal, price, amount, &mpd_ctx);
         mpd_mul(ask_fee, amount, taker->taker_fee, &mpd_ctx);
         mpd_mul(bid_fee, amount, maker->maker_fee, &mpd_ctx);
@@ -536,7 +536,7 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
             mpd_copy(amount, maker->left, &mpd_ctx);
         }
 
-        mpd_mul(lev_amount, amount, LEVERAGE, &mpd_ctx);
+        mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
         mpd_mul(deal, price, amount, &mpd_ctx);
         mpd_mul(ask_fee, amount, maker->maker_fee, &mpd_ctx);
         mpd_mul(bid_fee, amount, taker->taker_fee, &mpd_ctx);
@@ -659,7 +659,7 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
 int market_put_limit_order(bool real, json_t **result, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source)
 {
     mpd_t *lev_amount   = mpd_new(&mpd_ctx);
-    mpd_mul(lev_amount, amount, LEVERAGE, &mpd_ctx);
+    mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
     mpd_t *balance = balance_get(user_id, BALANCE_TYPE_AVAILABLE, m->stock);
     if (!balance || mpd_cmp(balance, lev_amount, &mpd_ctx) < 0) {
         return -1;
@@ -741,7 +741,7 @@ int market_put_limit_order(bool real, json_t **result, market_t *m, uint32_t use
 int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source)
 {
     mpd_t *freeze       = mpd_new(&mpd_ctx);
-    mpd_mul(freeze, price, LEVERAGE, &mpd_ctx);
+    mpd_mul(freeze, price, decimal(unit1_price, 0), &mpd_ctx);
 
     order_t *order = malloc(sizeof(order_t));
     if (order == NULL) {
@@ -778,11 +778,11 @@ int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32
 
     int ret;
     if (side == MARKET_ORDER_SIDE_ASK) {
-        mpd_mul(price, price, LEVERAGE_PRICE, &mpd_ctx);
+        mpd_mul(price, price, decimal(LEVERAGE_PRICE, 1), &mpd_ctx);
         mpd_copy(order->price, price, &mpd_ctx);
         ret = execute_limit_ask_order(real, m, order);
     } else {
-        mpd_div(price, price, LEVERAGE_PRICE, &mpd_ctx);
+        mpd_div(price, price, decimal(LEVERAGE_PRICE, 1), &mpd_ctx);
         mpd_copy(order->price, price, &mpd_ctx);
         ret = execute_limit_bid_order(real, m, order);
     }
@@ -841,7 +841,7 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
             mpd_copy(amount, maker->left, &mpd_ctx);
         }
         
-        mpd_mul(lev_amount, amount, LEVERAGE, &mpd_ctx);
+        mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
         mpd_mul(deal, price, amount, &mpd_ctx);
         mpd_mul(ask_fee, amount, taker->taker_fee, &mpd_ctx);
         mpd_mul(bid_fee, amount, maker->maker_fee, &mpd_ctx);
@@ -989,7 +989,7 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
             mpd_copy(amount, maker->left, &mpd_ctx);
         }
 
-        mpd_mul(lev_amount, amount, LEVERAGE, &mpd_ctx);
+        mpd_mul(lev_amount, amount, decimal(LEVERAGE, 1), &mpd_ctx);
         mpd_mul(deal, price, amount, &mpd_ctx);
         mpd_mul(ask_fee, amount, maker->maker_fee, &mpd_ctx);
         mpd_mul(bid_fee, amount, taker->taker_fee, &mpd_ctx);

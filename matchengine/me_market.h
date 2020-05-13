@@ -7,6 +7,7 @@
 # define _ME_MARKET_H_
 
 # include "me_config.h"
+# include "ut_decimal.h"
 
 extern uint64_t order_id_start;
 extern uint64_t deals_id_start;
