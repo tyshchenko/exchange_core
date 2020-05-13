@@ -88,9 +88,6 @@ static int order_match_compare(const void *value1, const void *value2)
     if (order1->id == order2->id) {
         return 0;
     }
-    if (order1->type != order2->type) {
-        return 1;
-    }
 
     int cmp;
     if (order1->side == MARKET_ORDER_SIDE_ASK) {
