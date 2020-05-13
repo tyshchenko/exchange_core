@@ -360,7 +360,7 @@ static int load_cancel_order(json_t *params)
     int ret = market_cancel_order(false, NULL, market, order);
     if (ret < 0) {
         log_error("market_cancel_order id: %"PRIu64", user id: %u, market: %s", order_id, user_id, market_name);
-        return -__LINE__;
+        //return -__LINE__;
     }
 
     return 0;
