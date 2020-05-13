@@ -149,6 +149,7 @@ json_t *get_order_info(order_t *order)
     json_object_set_new_mpd(info, "taker_fee", order->taker_fee);
     json_object_set_new_mpd(info, "maker_fee", order->maker_fee);
     json_object_set_new_mpd(info, "left", order->left);
+    json_object_set_new_mpd(info, "freeze", order->freeze);
     json_object_set_new_mpd(info, "deal_stock", order->deal_stock);
     json_object_set_new_mpd(info, "deal_money", order->deal_money);
     json_object_set_new_mpd(info, "deal_fee", order->deal_fee);
