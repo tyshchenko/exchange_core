@@ -303,18 +303,20 @@ mpd_t *balance_unfreeze(uint32_t user_id, const char *asset, mpd_t *amount)
     mpd_t *freeze = balance_get(user_id, BALANCE_TYPE_FREEZE, asset);
     if (freeze == NULL)
         return NULL;
-    if (mpd_cmp(freeze, amount, &mpd_ctx) < 0)
-        return NULL;
+    mpd_t *freeze_amount   = mpd_new(&mpd_ctx);
+    mpd_copy(freeze_amount, amount, &mpd_ctx);
+    if (mpd_cmp(freeze, freeze_amount, &mpd_ctx) < 0)
+        mpd_copy(freeze_amount, freeze, &mpd_ctx);
 
-    if (balance_add(user_id, BALANCE_TYPE_AVAILABLE, asset, amount) == 0)
+    if (balance_add(user_id, BALANCE_TYPE_AVAILABLE, asset, freeze_amount) == 0)
         return NULL;
-    mpd_sub(freeze, freeze, amount, &mpd_ctx);
+    mpd_sub(freeze, freeze, freeze_amount, &mpd_ctx);
     if (mpd_cmp(freeze, mpd_zero, &mpd_ctx) == 0) {
         balance_del(user_id, BALANCE_TYPE_FREEZE, asset);
         return mpd_zero;
     }
     mpd_rescale(freeze, freeze, -at->prec_save, &mpd_ctx);
-
+    mpd_del(freeze_amount);
     return freeze;
 }
 
