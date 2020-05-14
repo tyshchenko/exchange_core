@@ -225,6 +225,15 @@ static int order_finish(bool real, market_t *m, order_t *order)
     }
     if ((mpd_cmp(order->left, mpd_zero, &mpd_ctx) > 0) && (order->type == MARKET_ORDER_TYPE_FUTURES)) {
         int ret;
+        mpd_t *lev_amount   = mpd_new(&mpd_ctx);
+        mpd_mul(lev_amount, order->left, decimal(LEVERAGE, 1), &mpd_ctx);
+        
+        if (balance_unfreeze(order->user_id, m->stock, lev_amount) == NULL) {
+            return -__LINE__;
+        }
+
+        mpd_del(lev_amount);        
+        
         if (order->side == MARKET_ORDER_SIDE_ASK) {
             ret = execute_market_ask_order(real, m, order);
         } else {
