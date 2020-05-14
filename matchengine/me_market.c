@@ -12,6 +12,9 @@
 uint64_t order_id_start;
 uint64_t deals_id_start;
 
+static int execute_market_ask_order(bool real, market_t *m, order_t *taker);
+static int execute_market_bid_order(bool real, market_t *m, order_t *taker);
+
 struct dict_user_key {
     uint32_t    user_id;
 };
