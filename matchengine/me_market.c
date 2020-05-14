@@ -224,11 +224,16 @@ static int order_finish(bool real, market_t *m, order_t *order)
         }
     }
     if ((mpd_cmp(order->left, mpd_zero, &mpd_ctx) > 0) && (order->type == MARKET_ORDER_TYPE_FUTURES)) {
+        int ret;
         if (order->side == MARKET_ORDER_SIDE_ASK) {
             ret = execute_market_ask_order(real, m, order);
         } else {
             ret = execute_market_bid_order(real, m, order);
         }
+        if (ret < 0) {
+            log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+        }
+
     }
 
     struct dict_order_key order_key = { .order_id = order->id };
