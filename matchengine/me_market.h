@@ -58,6 +58,9 @@ int market_cancel_order(bool real, json_t **result, market_t *m, order_t *order)
 int execute_limit_futures_order(bool real, market_t *m, uint32_t user_id, uint32_t side, mpd_t *amount, mpd_t *price, mpd_t *taker_fee, mpd_t *maker_fee, const char *source);
 int market_put_order(market_t *m, order_t *order);
 
+static int execute_market_ask_order(bool real, market_t *m, order_t *taker);
+static int execute_market_bid_order(bool real, market_t *m, order_t *taker);
+
 json_t *get_order_info(order_t *order);
 order_t *market_get_order(market_t *m, uint64_t id);
 skiplist_t *market_get_order_list(market_t *m, uint32_t user_id);

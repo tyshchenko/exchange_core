@@ -231,7 +231,7 @@ static int order_finish(bool real, market_t *m, order_t *order)
             ret = execute_market_bid_order(real, m, order);
         }
         if (ret < 0) {
-            log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+            log_error("close order: %"PRIu64" fail: %d", order->id, ret);
         }
 
     }
