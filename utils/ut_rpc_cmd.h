@@ -25,6 +25,7 @@
 # define CMD_ORDER_DEALS            209
 # define CMD_ORDER_DETAIL_FINISHED  210
 # define CMD_FUTURES_ORDER_QUERY    211
+# define CMD_FUTURES_CANCEL         212
 
 // market
 # define CMD_MARKET_STATUS          301

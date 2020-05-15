@@ -272,6 +272,7 @@ static int init_methods_handler(void)
     ERR_RET_LN(add_handler("order.depth", matchengine, CMD_ORDER_BOOK_DEPTH));
     ERR_RET_LN(add_handler("order.pending", matchengine, CMD_ORDER_QUERY));
     ERR_RET_LN(add_handler("futures.pending", matchengine, CMD_FUTURES_ORDER_QUERY));
+    ERR_RET_LN(add_handler("futures.cancel", matchengine, CMD_FUTURES_CANCEL));
     ERR_RET_LN(add_handler("order.pending_detail", matchengine, CMD_ORDER_DETAIL));
     ERR_RET_LN(add_handler("order.deals", readhistory, CMD_ORDER_DEALS));
     ERR_RET_LN(add_handler("order.finished", readhistory, CMD_ORDER_HISTORY));
