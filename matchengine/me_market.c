@@ -452,7 +452,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
-                log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+                log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
 
@@ -498,7 +498,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
             }
             mpd_del(earn_money);
         } else {
-            ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
+            ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_BID, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
@@ -608,7 +608,7 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
-                log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+                log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
         
@@ -620,7 +620,6 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
         }
 
         mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
-        mpd_sub(maker->freeze, maker->freeze, amount, &mpd_ctx);
         mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
         mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
         mpd_add(maker->deal_fee, maker->deal_fee, ask_fee, &mpd_ctx);
@@ -657,7 +656,7 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
             }
             mpd_del(earn_money);
         } else {
-            ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
+            ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
@@ -929,7 +928,7 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
-                log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+                log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
         
@@ -978,7 +977,7 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
             }
             mpd_del(earn_money);
         } else {
-            ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
+            ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_BID, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
@@ -1087,7 +1086,7 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
-                log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
+                log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
         
@@ -1135,7 +1134,7 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
             }
             mpd_del(earn_money);
         } else {
-            ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
+            ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
             
             if (ret < 0) {
