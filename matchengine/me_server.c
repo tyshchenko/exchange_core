@@ -741,12 +741,7 @@ static int on_cmd_futures_cancel(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     }
 
     json_t *result = NULL;
-    order->type = MARKET_ORDER_TYPE_LIMIT;
-    mpd_t *lev_amount   = mpd_new(&mpd_ctx);
-    mpd_mul(lev_amount, order->left, decimal(LEVERAGE, 1), &mpd_ctx);
-    order->freeze = lev_amount;
-    mpd_del(lev_amount);
-    int ret = market_cancel_order(true, &result, market, order);
+    int ret = futures_cancel_order(true, &result, market, order);
     if (ret < 0) {
         log_fatal("cancel order: %"PRIu64" fail: %d", order->id, ret);
         return reply_error_internal_error(ses, pkg);

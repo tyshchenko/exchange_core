@@ -274,6 +274,62 @@ static int order_finish(bool real, market_t *m, order_t *order)
     return 0;
 }
 
+static int futures_order_finish(bool real, market_t *m, order_t *order)
+{
+    if (order->side == MARKET_ORDER_SIDE_ASK) {
+        skiplist_node *node = skiplist_find(m->asks, order);
+        if (node) {
+            skiplist_delete(m->asks, node);
+        }
+    } else {
+        skiplist_node *node = skiplist_find(m->bids, order);
+        if (node) {
+            skiplist_delete(m->bids, node);
+        }
+    }
+    
+    if ((mpd_cmp(order->left, mpd_zero, &mpd_ctx) > 0) && (order->type == MARKET_ORDER_TYPE_FUTURES)) {
+        int ret;
+        mpd_t *lev_amount   = mpd_new(&mpd_ctx);
+        mpd_mul(lev_amount, order->left, decimal(LEVERAGE, 1), &mpd_ctx);
+        
+        if (balance_unfreeze(order->user_id, m->stock, lev_amount) == NULL) {
+            return -__LINE__;
+        }
+
+        mpd_del(lev_amount);        
+        if (ret < 0) {
+            log_error("close order: %"PRIu64" fail: %d", order->id, ret);
+        }
+
+    }
+
+    struct dict_order_key order_key = { .order_id = order->id };
+    dict_delete(m->orders, &order_key);
+
+    struct dict_user_key user_key = { .user_id = order->user_id };
+    dict_entry *entry = dict_find(m->users, &user_key);
+    if (entry) {
+        skiplist_t *order_list = entry->val;
+        skiplist_node *node = skiplist_find(order_list, order);
+        if (node) {
+            skiplist_delete(order_list, node);
+        }
+    }
+
+    if (real) {
+        if (mpd_cmp(order->deal_stock, mpd_zero, &mpd_ctx) > 0) {
+            int ret = append_order_history(order);
+            if (ret < 0) {
+                log_fatal("append_order_history fail: %d, order: %"PRIu64"", ret, order->id);
+            }
+        }
+    }
+
+    order_free(order);
+    return 0;
+}
+
 market_t *market_create(struct market *conf)
 {
     if (!asset_exist(conf->stock) || !asset_exist(conf->money))
@@ -1324,6 +1380,16 @@ int market_cancel_order(bool real, json_t **result, market_t *m, order_t *order)
         *result = get_order_info(order);
     }
     order_finish(real, m, order);
+    return 0;
+}
+
+int futures_cancel_order(bool real, json_t **result, market_t *m, order_t *order)
+{
+    if (real) {
+        push_order_message(ORDER_EVENT_FINISH, order, m);
+        *result = get_order_info(order);
+    }
+    futures_order_finish(real, m, order);
     return 0;
 }
 
