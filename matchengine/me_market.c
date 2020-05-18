@@ -420,16 +420,16 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
             push_deal_message(taker->update_time, m->name, taker, maker, price, amount, ask_fee, bid_fee, MARKET_ORDER_SIDE_ASK, deal_id, m->stock, m->money);
         }
 
-        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
-        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
-        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
-        mpd_add(taker->deal_fee, taker->deal_fee, ask_fee, &mpd_ctx);
-
         if (taker->type == MARKET_ORDER_TYPE_FUTURES) {
+          //ask taker
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, deal, taker->freeze, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, taker->freeze, taker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
+            mpd_sub(taker->freeze, taker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, taker->freeze, deal, &mpd_ctx);
+              mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(taker, m->money, earn_money, price, amount);
               } 
@@ -449,6 +449,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
@@ -456,17 +457,17 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
             }
         }
 
+        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
+        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
+        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
+        mpd_add(taker->deal_fee, taker->deal_fee, ask_fee, &mpd_ctx);
+
         if (mpd_cmp(ask_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(taker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, ask_fee);
             if (real) {
                 append_balance_trade_fee(taker, m->stock, ask_fee, price, amount, taker->taker_fee);
             }
         }
-
-        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
-        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
-        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
-        mpd_add(maker->deal_fee, maker->deal_fee, bid_fee, &mpd_ctx);
         
         if (balance_unfreeze(maker->user_id, m->stock, lev_amount) == NULL) {
             log_error("execute order: %"PRIu64" fail balance_unfreeze", maker->id);
@@ -474,10 +475,15 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
         }
 
         if (maker->type == MARKET_ORDER_TYPE_FUTURES) {
+          // maker bid
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, maker->freeze, deal, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, maker->freeze, maker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
+            mpd_sub(maker->freeze, maker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, deal, maker->freeze, &mpd_ctx);
+              mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(maker, m->money, earn_money, price, amount);
               } 
@@ -497,6 +503,7 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_BID, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
@@ -504,6 +511,11 @@ static int execute_limit_ask_order(bool real, market_t *m, order_t *taker)
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
             }
         }
+
+        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
+        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
+        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
+        mpd_add(maker->deal_fee, maker->deal_fee, bid_fee, &mpd_ctx);
 
         if (mpd_cmp(bid_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(maker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, bid_fee);
@@ -576,16 +588,16 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
             push_deal_message(taker->update_time, m->name, maker, taker, price, amount, ask_fee, bid_fee, MARKET_ORDER_SIDE_BID, deal_id, m->stock, m->money);
         }
 
-        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
-        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
-        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
-        mpd_add(taker->deal_fee, taker->deal_fee, bid_fee, &mpd_ctx);
-
         if (taker->type == MARKET_ORDER_TYPE_FUTURES) {
+          //taker bid
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, taker->freeze, deal, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, taker->freeze, taker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
+            mpd_sub(taker->freeze, taker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, deal, taker->freeze, &mpd_ctx);
+              mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(taker, m->money, earn_money, price, amount);
               } 
@@ -605,12 +617,18 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
+
+        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
+        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
+        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
+        mpd_add(taker->deal_fee, taker->deal_fee, bid_fee, &mpd_ctx);
         
         if (mpd_cmp(bid_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(taker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, bid_fee);
@@ -618,12 +636,6 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
                 append_balance_trade_fee(taker, m->stock, bid_fee, price, amount, taker->taker_fee);
             }
         }
-
-        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
-        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
-        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
-        mpd_add(maker->deal_fee, maker->deal_fee, ask_fee, &mpd_ctx);
-
                 
         if (balance_unfreeze(maker->user_id, m->stock, lev_amount) == NULL) {
             log_error("execute order: %"PRIu64" fail balance_unfreeze", maker->id);
@@ -632,10 +644,15 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
 
         
         if (maker->type == MARKET_ORDER_TYPE_FUTURES) {
+          //maker ask
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, deal, maker->freeze, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, maker->freeze, maker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
+            mpd_sub(maker->freeze, maker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, maker->freeze, deal, &mpd_ctx);
+              mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(maker, m->money, earn_money, price, amount);
               } 
@@ -655,6 +672,7 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
@@ -662,6 +680,12 @@ static int execute_limit_bid_order(bool real, market_t *m, order_t *taker)
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
             }
         }        
+
+        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
+        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
+        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
+        mpd_add(maker->deal_fee, maker->deal_fee, ask_fee, &mpd_ctx);
+
 
         if (mpd_cmp(ask_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(maker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, ask_fee);
@@ -895,17 +919,16 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
             push_deal_message(taker->update_time, m->name, taker, maker, price, amount, ask_fee, bid_fee, MARKET_ORDER_SIDE_ASK, deal_id, m->stock, m->money);
         }
 
-        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
-        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
-        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
-        mpd_add(taker->deal_fee, taker->deal_fee, ask_fee, &mpd_ctx);
-
-        
         if (taker->type == MARKET_ORDER_TYPE_FUTURES) {
+          //for taker ask order
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, deal, taker->freeze, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, taker->freeze, taker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
+            mpd_sub(taker->freeze, taker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, taker->freeze, deal, &mpd_ctx);
+              mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(taker, m->money, earn_money, price, amount);
               } 
@@ -925,6 +948,7 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
@@ -932,6 +956,11 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
             }
         }
         
+        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
+        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
+        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
+        mpd_add(taker->deal_fee, taker->deal_fee, ask_fee, &mpd_ctx);
+
         
         if (mpd_cmp(ask_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(taker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, ask_fee);
@@ -940,12 +969,6 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
             }
         }
 
-        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
-        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
-        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
-        mpd_add(maker->deal_fee, maker->deal_fee, bid_fee, &mpd_ctx);
-
-                
         if (balance_unfreeze(maker->user_id, m->stock, lev_amount) == NULL) {
             log_error("execute order: %"PRIu64" fail balance_unfreeze", maker->id);
             return -__LINE__;
@@ -953,10 +976,15 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
 
         
         if (maker->type == MARKET_ORDER_TYPE_FUTURES) {
+          // maker bid order
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, maker->freeze, deal, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, maker->freeze, maker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
+            mpd_sub(maker->freeze, maker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, deal, maker->freeze, &mpd_ctx);
+              mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(maker, m->money, earn_money, price, amount);
               } 
@@ -976,6 +1004,7 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_BID, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
@@ -983,6 +1012,12 @@ static int execute_market_ask_order(bool real, market_t *m, order_t *taker)
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
             }
         }
+
+        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
+        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
+        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
+        mpd_add(maker->deal_fee, maker->deal_fee, bid_fee, &mpd_ctx);
+
 
         if (mpd_cmp(bid_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(maker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, bid_fee);
@@ -1052,18 +1087,17 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
             append_order_deal_history(taker->update_time, deal_id, maker, MARKET_ROLE_MAKER, taker, MARKET_ROLE_TAKER, price, amount, deal, ask_fee, bid_fee);
             push_deal_message(taker->update_time, m->name, maker, taker, price, amount, ask_fee, bid_fee, MARKET_ORDER_SIDE_BID, deal_id, m->stock, m->money);
         }
-
-        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
-        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
-        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
-        mpd_add(taker->deal_fee, taker->deal_fee, bid_fee, &mpd_ctx);
-
         
         if (taker->type == MARKET_ORDER_TYPE_FUTURES) {
+          // taker bid order
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, taker->freeze, deal, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, taker->freeze, taker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
+            mpd_sub(taker->freeze, taker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, deal, taker->freeze, &mpd_ctx);
+              mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(taker, m->money, earn_money, price, amount);
               } 
@@ -1083,12 +1117,19 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, taker->user_id, MARKET_ORDER_SIDE_BID, amount, price, taker->taker_fee, taker->maker_fee, taker->source);
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", taker->id, ret);
             }
         }
+
+        mpd_sub(taker->left, taker->left, amount, &mpd_ctx);
+        mpd_add(taker->deal_stock, taker->deal_stock, amount, &mpd_ctx);
+        mpd_add(taker->deal_money, taker->deal_money, deal, &mpd_ctx);
+        mpd_add(taker->deal_fee, taker->deal_fee, bid_fee, &mpd_ctx);
+
         
         if (mpd_cmp(bid_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(taker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, bid_fee);
@@ -1096,11 +1137,6 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
                 append_balance_trade_fee(taker, m->stock, bid_fee, price, amount, taker->taker_fee);
             }
         }
-
-        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
-        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
-        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
-        mpd_add(maker->deal_fee, maker->deal_fee, ask_fee, &mpd_ctx);
 
         
         if (balance_unfreeze(maker->user_id, m->stock, lev_amount) == NULL) {
@@ -1110,10 +1146,15 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
 
         
         if (maker->type == MARKET_ORDER_TYPE_FUTURES) {
+          //maker ask order
             mpd_t *earn_money    = mpd_new(&mpd_ctx);
-            mpd_sub(earn_money, deal, maker->freeze, &mpd_ctx);
+            mpd_t *deal_freeze   = mpd_new(&mpd_ctx);
+            mpd_div(deal_freeze, maker->freeze, maker->left, &mpd_ctx);
+            mpd_mul(deal_freeze, deal_freeze, amount, &mpd_ctx);
+            mpd_sub(earn_money, deal, deal_freeze, &mpd_ctx);
+            mpd_sub(maker->freeze, maker->freeze, deal_freeze, &mpd_ctx);
             if (mpd_cmp(earn_money, mpd_zero, &mpd_ctx) < 0) {
-              mpd_sub(earn_money, maker->freeze, deal, &mpd_ctx);
+              mpd_sub(earn_money, deal_freeze, deal, &mpd_ctx);
               if (real) {
                   append_balance_trade_sub(maker, m->money, earn_money, price, amount);
               } 
@@ -1133,6 +1174,7 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
               }
             }
             mpd_del(earn_money);
+            mpd_del(deal_freeze);
         } else {
             ret = execute_limit_futures_order(real, m, maker->user_id, MARKET_ORDER_SIDE_ASK, amount, price, maker->taker_fee, maker->maker_fee, maker->source);
             mpd_sub(maker->freeze, maker->freeze, lev_amount, &mpd_ctx);
@@ -1140,7 +1182,13 @@ static int execute_market_bid_order(bool real, market_t *m, order_t *taker)
             if (ret < 0) {
                 log_error("execute order: %"PRIu64" fail: %d", maker->id, ret);
             }
-        }        
+        }
+        
+        mpd_sub(maker->left, maker->left, amount, &mpd_ctx);
+        mpd_add(maker->deal_stock, maker->deal_stock, amount, &mpd_ctx);
+        mpd_add(maker->deal_money, maker->deal_money, deal, &mpd_ctx);
+        mpd_add(maker->deal_fee, maker->deal_fee, ask_fee, &mpd_ctx);
+
 
         if (mpd_cmp(ask_fee, mpd_zero, &mpd_ctx) > 0) {
             balance_sub(maker->user_id, BALANCE_TYPE_AVAILABLE, m->stock, ask_fee);
